@@ -66,7 +66,7 @@ local function EPA(shape_a, shape_b)
 	end
 
 	-- the expanding polytype algorithm
-	local is_either_circle = shape_a._center or shape_b._center
+	local is_either_circle = shape_a.type == "circle" or shape_b.type == "circle"
 	local last_diff_dist, n = huge, 6
 	while true do
 		closest_edge(n)

@@ -46,38 +46,23 @@ function HC:init(cell_size)
   self:resetHash(cell_size)
 end
 
-function HC:hash() return self._hash end -- consistent interface with global HC instance
+function HC:hash() return self.hash end -- consistent interface with global HC instance
 
 -- spatial hash management
 function HC:resetHash(cell_size)
-	self._hash = common_local.instance(Spatialhash, cell_size or 100)
+	self.hash = common_local.instance(Spatialhash, cell_size or 100)
 	return self
 end
 
 function HC:register(shape)
-	self._hash:register(shape, shape:bbox())
-
-	-- keep track of where/how big the shape is
-	for _, f in ipairs({'move', 'rotate', 'scale'}) do
-		local old_function = shape[f]
-		shape[f] = function(this, ...)
-			local x1,y1,x2,y2 = this:bbox()
-			old_function(this, ...)
-			self._hash:update(this, x1,y1,x2,y2, this:bbox())
-			return this
-		end
-	end
-
+	self.hash:register(shape, shape:bbox())
+	shape.owningHashes[self.hash] = true
 	return shape
 end
 
 function HC:remove(shape)
-	self._hash:remove(shape, shape:bbox())
-	for _, f in ipairs({'move', 'rotate', 'scale'}) do
-		shape[f] = function()
-			error(f.."() called on a removed shape")
-		end
-	end
+	self.hash:remove(shape, shape:bbox())
+	shape.owningHashes[self.hash] = nil
 	return self
 end
 
@@ -86,21 +71,21 @@ function HC:polygon(...)
 	return self:register(newPolygonShape(...))
 end
 
-function HC:rectangle(x,y,w,h)
-	return self:polygon(x,y, x+w,y, x+w,y+h, x,y+h)
+function HC:rectangle(x,y,w,h,o)
+	return self:polygon(x,y, x+w,y, x+w,y+h, x,y+h, o)
 end
 
-function HC:circle(x,y,r)
-	return self:register(newCircleShape(x,y,r))
+function HC:circle(x,y,r, o)
+	return self:register(newCircleShape(r,x,y,nil,nil,o))
 end
 
-function HC:point(x,y)
-	return self:register(newPointShape(x,y))
+function HC:point(x,y, o)
+	return self:register(newPointShape(x,y,nil,nil,o))
 end
 
 -- collision detection
 function HC:neighbors(shape)
-	local neighbors = self._hash:inSameCells(shape:bbox())
+	local neighbors = self.hash:inSameCells(shape:bbox())
 	rawset(neighbors, shape, nil)
 	return neighbors
 end
@@ -120,7 +105,7 @@ end
 
 function HC:shapesAt(x, y)
 	local candidates = {}
-	for c in pairs(self._hash:cellAt(x, y)) do
+	for c in pairs(self.hash:cellAt(x, y)) do
 		if c:contains(x, y) then
 			rawset(candidates, c, c)
 		end
