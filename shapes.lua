@@ -394,20 +394,13 @@ function Shape:segmentIntersectionLength(x1,y1, x2,y2)
 	local dx, dy = x2-x1,y2-y1
 	local function contains(p, q)
 		p = q and (p + q) / 2 or p
-		if self:contains(x1 + dx * p, y1 + dy * p) then
-			love.graphics.points(x1 + dx * p, y1 + dy * p)
-		else
-			love.graphics.points(x1 + dx * p, y1 + dy * p + 4)
-		end
 		return self:contains(x1 + dx * p, y1 + dy * p)
 	end
 	if contains(0) then
 		table_insert(intersections, 0)
-		love.graphics.points(x1, y1)
 	end
 	if contains(1) then
 		table_insert(intersections, 1)
-		love.graphics.points(x1 + dx, y1 + dy)
 	end	
 	table_sort(intersections)
 	local listLength = #intersections
@@ -415,7 +408,6 @@ function Shape:segmentIntersectionLength(x1,y1, x2,y2)
 	local ret = 0
 	for i = 1, listLength - 1 do
 		local a, b = intersections[i], intersections[i + 1]
-		love.graphics.print("\n"..b.." "..a)
 		if contains(a, b) then ret = ret + b - a end
 	end
 	return ret * math_sqrt(dx^2+dy^2)
